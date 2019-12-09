@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 data=[]
 traffic_feature=[]
 traffic_target=[]
-csv_file = csv.reader(open('RFData.csv'))
+csv_file = csv.reader(open('../RFData.csv'))
 for content in csv_file:
     content=list(map(float,content))
     if len(content)!=0:

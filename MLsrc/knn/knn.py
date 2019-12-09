@@ -1,11 +1,9 @@
-from sklearn import svm
+from sklearn.neighbors import KNeighborsClassifier
 import csv
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import StandardScaler
-import numpy as np
 data=[]
 traffic_feature=[]
 traffic_target=[]
@@ -19,14 +17,10 @@ for content in csv_file:
 print('data=',data)
 print('traffic_feature=',traffic_feature)
 print('traffic_target=',traffic_target)
-scaler = StandardScaler() # 标准化转换
-scaler.fit(traffic_feature)  # 训练标准化对象
-traffic_feature= scaler.transform(traffic_feature)   # 转换数据集
 feature_train, feature_test, target_train, target_test = train_test_split(traffic_feature, traffic_target, test_size=0.3,random_state=0)
-clf = svm.SVC(C=0.8, kernel='rbf', gamma=20, decision_function_shape='ovr')
-# clf = svm.SVC(C=0.1, kernel='linear', decision_function_shape='ovr')
-clf.fit(feature_train,target_train)
-predict_results=clf.predict(feature_test)
+knn = KNeighborsClassifier(n_neighbors=3)
+knn.fit(feature_train,target_train)
+predict_results=knn.predict(feature_test)
 print(accuracy_score(predict_results, target_test))
 conf_mat = confusion_matrix(target_test, predict_results)
 print(conf_mat)
