@@ -13,7 +13,7 @@ batchSize = args.posebatch
 
 
 class ImageProcessor(object):
-    def __init__(self, framesize):
+    def __init__(self, framesize=(320, 480)):
         self.object_detector = ObjectDetection()
         self.detection_processor = DetectionProcessor()
         self.data_recorder = PoseEstimator(framesize)
