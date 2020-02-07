@@ -1,7 +1,5 @@
 import cv2
 from src.processor import ImageProcessor
-import csv
-import os
 from utils.utils import Utils
 
 IP = ImageProcessor()
@@ -12,11 +10,9 @@ joint_ls = {"Left arm": [5, 7, 9], "Right arm": [6, 8, 10], "Left shoulder": [7,
             "Left hip": [5, 11, 13], "Right hip": [6, 12, 14], "Left leg": [11, 13, 15], "Right leg": [12, 14, 16]}
 
 
-class AngleCSVWriter:
-    def __init__(self, label, action, csvfile):
-        self.csv_file = csvfile
-        self.label = label
-        self.action = action
+class MLTester:
+    def __init__(self):
+        pass
 
     def run_img(self, inp, ispath=True):
         frame = cv2.imread(inp) if ispath else inp
@@ -25,8 +21,10 @@ class AngleCSVWriter:
         if len(img) > 0 and len(key_point) > 0:
             angle_ls = [Utils.get_angle(key_point[joint_ls[key][1]], key_point[joint_ls[key][0]], key_point[joint_ls[key][2]])
                         for key in list(joint_ls.keys())]
-            angle_ls += [self.label, self.action]
-            self.csv_file.writerow(angle_ls)
+
+
+            ### predict the action
+
             cv2.imshow("result", img)
             cv2.waitKey(2)
         else:
@@ -44,23 +42,12 @@ class AngleCSVWriter:
             else:
                 break
 
-    def run_img_folder(self, folder):
-        imgs = [os.path.join(folder, filename) for filename in os.listdir(folder)]
-        for img in imgs:
-            self.run_img(img)
-
-    def run_video_folder(self, folder):
-        videos = [os.path.join(folder, filename) for filename in os.listdir(folder)]
-        for video in videos:
-            self.run_video(video)
-
 
 if __name__ == "__main__":
-    f = open('yoga.csv', 'w', encoding='utf-8', newline='\n')
-    dir_src = "Video/yoga"
-    dir_ls = [os.path.join(dir_src, sub_dir) for sub_dir in os.listdir(dir_src)]
-    label_dict = ["boat", "cobra", "chair", "camel", "triangle"]   # 一个文件夹对应一个label
-    assert len(dir_ls) == len(label_dict), "The length of label and directory are not equal!"
-    for idx, dir in enumerate(dir_ls):
-        AngleCSVWriter(idx, label_dict[idx], csv.writer(f)).run_img_folder(dir)
-    f.close()
+    path = ""
+    if "avi" in path or "mp4" in path:
+        MLTester().run_video(path)
+    elif "jpg" in path or "png" in path or "jpeg" in path:
+        MLTester().run_img(path)
+    else:
+        raise ValueError("Wrong input file format")
