@@ -24,7 +24,8 @@ class ImageProcessor(object):
             self.pose_model = InferenNet_fast(4 * 1 + 1, pose_dataset)
         else:
             self.pose_model = InferenNet(4 * 1 + 1, pose_dataset)
-        self.pose_model.cuda()
+        if config.device != "cpu":
+            self.pose_model.cuda()
         self.pose_model.eval()
 
     def process_img(self, frame):
@@ -44,7 +45,9 @@ class ImageProcessor(object):
                 hm = []
 
                 for j in range(num_batches):
-                    inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)].cuda()
+                    inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)]
+                    if config.device != "cpu":
+                        inps_j = inps_j.cuda()
                     hm_j = self.pose_model(inps_j)
                     hm.append(hm_j)
                 hm = torch.cat(hm).cpu().data

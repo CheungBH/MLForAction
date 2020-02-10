@@ -1,8 +1,8 @@
 import torch
 
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-cuda_flag = torch.cuda.is_available()
+device = "cuda:0"
+print("Using {}".format(device))
 
 X_vector_dim = 36
 time_step = 15

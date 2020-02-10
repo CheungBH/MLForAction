@@ -20,18 +20,18 @@ class AngleCSVWriter:
 
     def run_img(self, inp, ispath=True):
         frame = cv2.imread(inp) if ispath else inp
-        # waitkey = 100 if ispath else 2
-        key_point, img, img_black = IP.process_img(frame)
+        waitkey = 1000 if ispath else 2
+        key_point, img, _ = IP.process_img(frame)
         if len(img) > 0 and len(key_point) > 0:
             angle_ls = [Utils.get_angle(key_point[joint_ls[key][1]], key_point[joint_ls[key][0]], key_point[joint_ls[key][2]])
                         for key in list(joint_ls.keys())]
             angle_ls += [self.label, self.action]
             self.csv_file.writerow(angle_ls)
             cv2.imshow("result", img)
-            cv2.waitKey(2)
+            cv2.waitKey(waitkey)
         else:
             cv2.imshow("result", img)
-            cv2.waitKey(2)
+            cv2.waitKey(waitkey)
 
     def run_video(self, video):
         frm_cnt = 0
@@ -56,6 +56,7 @@ class AngleCSVWriter:
 
 
 if __name__ == "__main__":
+    # if run image folders
     f = open('yoga.csv', 'w', encoding='utf-8', newline='\n')
     dir_src = "Video/yoga"
     dir_ls = [os.path.join(dir_src, sub_dir) for sub_dir in os.listdir(dir_src)]
@@ -64,3 +65,18 @@ if __name__ == "__main__":
     for idx, dir in enumerate(dir_ls):
         AngleCSVWriter(idx, label_dict[idx], csv.writer(f)).run_img_folder(dir)
     f.close()
+
+
+    # if run image
+    # f = open('yoga.csv', 'w', encoding='utf-8', newline='\n')
+    # label, idx = "boat", 0 #image label and idx
+    # img_path = "Video/yoga_img.jpg"
+    # AngleCSVWriter(idx, label, csv.writer(f)).run_img(img_path)
+    # f.close()
+
+    # if run video
+    # f = open('yoga.csv', 'w', encoding='utf-8', newline='\n')
+    # label, idx = "boat", 0 #image label and idx
+    # video_path = "Video/yoga_video.mp4"
+    # AngleCSVWriter(idx, label, csv.writer(f)).run_video(video_path)
+    # f.close()

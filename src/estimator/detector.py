@@ -5,6 +5,7 @@ from ..yolo.preprocess import prep_frame
 from ..yolo.util import dynamic_write_results
 from ..yolo.darknet import Darknet
 import cv2
+from config.config import device
 
 
 class VideoProcessor(object):
@@ -31,15 +32,18 @@ class VideoProcessor(object):
 
         return img, orig_img, im_name, im_dim_list
 
+
 class ObjectDetection(object):
     def __init__(self, batchSize=1):
-        self.det_model = Darknet("src/yolo/cfg/yolov3-swim-test.cfg")
-        self.det_model.load_weights('models/yolo/yolov3-swim_50000.weights')
+        self.det_model = Darknet("src/yolo/cfg/yolov3-spp.cfg")
+        # self.det_model.load_weights('models/yolo/yolov3-swim_50000.weights')
+        self.det_model.load_weights('models/yolo/yolov3-spp.weights')
         self.det_model.net_info['height'] = opt.inp_dim
         self.det_inp_dim = int(self.det_model.net_info['height'])
         assert self.det_inp_dim % 32 == 0
         assert self.det_inp_dim > 32
-        self.det_model.cuda()
+        if device != "cpu":
+            self.det_model.cuda()
         self.det_model.eval()
 
         self.stopped = False
@@ -48,8 +52,11 @@ class ObjectDetection(object):
     def process(self, img, orig_img, im_name, im_dim_list):
         with torch.no_grad():
             # Human Detection
-            img = img.cuda()
-            prediction = self.det_model(img, CUDA=True)
+            if device != "cpu":
+                img = img.cuda()
+                prediction = self.det_model(img, CUDA=True)
+            else:
+                prediction = self.det_model(img, CUDA=False)
             # NMS process
             dets = dynamic_write_results(prediction, opt.confidence,  opt.num_classes, nms=True, nms_conf=opt.nms_thesh)
 
