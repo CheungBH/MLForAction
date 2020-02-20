@@ -72,17 +72,22 @@ class ImageProcessor(object):
         cv2.moveWindow("result_black", 1200, 540)
         cv2.waitKey(1)
 
-    def get_skeleton(self, frame):
+    def process_single_person(self, frame):
         frame = cv2.resize(frame, config.frame_size)
         with torch.no_grad():
             inps, orig_img, boxes, scores, pt1, pt2 = self.object_detector.process(frame)
             key_points, img, img_black = self.pose_estimator.process_img(inps, orig_img, boxes, scores, pt1, pt2)
             return key_points[0], img, img_black
 
-            # if len(key_points) > 0:
-            #     id2ske_all, id2bbox_all = self.object_tracker.track(boxes, key_points)
-            #     id2ske, id2bbox = self.locator.locate_user(id2ske_all, id2bbox_all)
-            #     return id2ske, img, img_black
+    def process_multiple_person(self, frame):
+        frame = cv2.resize(frame, config.frame_size)
+        with torch.no_grad():
+            inps, orig_img, boxes, scores, pt1, pt2 = self.object_detector.process(frame)
+            key_points, img, img_black = self.pose_estimator.process_img(inps, orig_img, boxes, scores, pt1, pt2)
+            if len(key_points) > 0:
+                id2ske_all, id2bbox_all = self.object_tracker.track(boxes, key_points)
+                id2ske, id2bbox = self.locator.locate_user(id2ske_all, id2bbox_all)
+        return id2ske, img, img_black
 
 
 if __name__ == '__main__':
