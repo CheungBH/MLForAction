@@ -1,5 +1,5 @@
 import cv2
-from src.processor import ImageProcessor
+from detect import ImageProcessor
 import csv
 import os
 from utils.utils import Utils
@@ -21,7 +21,7 @@ class AngleCSVWriter:
     def run_img(self, inp, ispath=True):
         frame = cv2.imread(inp) if ispath else inp
         waitkey = 1000 if ispath else 2
-        key_point, img, _ = IP.process_img(frame)
+        key_point, img, _ = IP.get_skeleton(frame)
         if len(img) > 0 and len(key_point) > 0:
             angle_ls = [Utils.get_angle(key_point[joint_ls[key][1]], key_point[joint_ls[key][0]], key_point[joint_ls[key][2]])
                         for key in list(joint_ls.keys())]

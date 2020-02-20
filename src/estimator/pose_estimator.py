@@ -1,66 +1,54 @@
-from .opt import opt
-from .pPose_nms import pose_nms
-from ..SPPE.src.utils.eval import getPrediction
-from src.locator import Locator as GLocator
-import numpy as np
-
-if opt.vis_fast:
-    from .fn import vis_frame_fast as vis_frame, vis_frame_black
-else:
-    from .fn import vis_frame, vis_frame_black
-
-PULocator = GLocator
-SULocator = GLocator
-SquatULocator = GLocator
+from config import config
+from .visualize import KeyPointVisualizer
+from .nms import pose_nms
+from src.SPPE.src.main_fast_inference import *
+from src.estimator.datatset import Mscoco
 
 
 class PoseEstimator(object):
-    def __init__(self, frameSize=(640,480)):
-        self.final_result = []
-        self.img = []
+    def __init__(self):
         self.skeleton = []
-        self.Locator = GLocator(base=(int(frameSize[0] / 2), 0))
-        # initialize the queue used to store frames read from
-        # the video file
-        self.cnt = 0
-        # self.log = open("log/DataWriter.txt", "w")
-        self.result = []
+        self.KPV = KeyPointVisualizer()
+        pose_dataset = Mscoco()
+        if config.fast_inference:
+            self.pose_model = InferenNet_fast(4 * 1 + 1, pose_dataset)
+        else:
+            self.pose_model = InferenNet(4 * 1 + 1, pose_dataset)
+        self.pose_model.cuda()
+        self.pose_model.eval()
+        self.batch_size = config.pose_batch
 
-    def process(self, boxes, scores, hm_data, pt1, pt2, orig_img, im_name):
+    def __get_skeleton(self, boxes, scores, hm_data, pt1, pt2, orig_img):
         orig_img = np.array(orig_img, dtype=np.uint8)
         if boxes is None:
-            return orig_img, []
+            return orig_img, [], [], boxes
         else:
-            # location prediction (n, kp, 2) | score prediction (n, kp, 1)
             preds_hm, preds_img, preds_scores = getPrediction(
-                hm_data, pt1, pt2, opt.inputResH, opt.inputResW, opt.outputResH, opt.outputResW)
-            self.result = pose_nms(boxes, scores, preds_img, preds_scores)
-            if self.result:
-                result = self.locate()
-                # result = self.result
-                result = {
-                    'imgname': im_name,
-                    'result': result
-                }
-                self.final_result.append(result)
-                img_black, pred_black = vis_frame_black(orig_img, result)
-                self.img = img_black
-                self.skeleton = pred_black
-                img, pred = vis_frame(orig_img, result)
-                return img, self.skeleton, self.img
+                hm_data, pt1, pt2, config.input_height, config.input_width, config.output_height, config.output_width)
+            kps, score = pose_nms(boxes, scores, preds_img, preds_scores)
+
+            if kps:
+                img_black = self.KPV.vis_ske_black(orig_img, kps, score)
+                img = self.KPV.vis_ske(orig_img, kps, score)
+                return img, kps, img_black, boxes
             else:
-                return orig_img, [], orig_img
+                return orig_img, [], orig_img, boxes
 
-    def locate(self):
-        return self.result
+    def process_img(self, inps, orig_img, boxes, scores, pt1, pt2):
+        try:
+            datalen = inps.size(0)
+            leftover = 0
+            if (datalen) % self.batch_size:
+                leftover = 1
+            num_batches = datalen // self.batch_size + leftover
+            hm = []
 
-
-class PoseEstimatorBegin(PoseEstimator):
-    def __init__(self, location):
-        super().__init__()
-        self.Locator = GLocator(base=location)
-
-    def locate(self):
-        return [self.Locator.locate_user(self.result)]
-
-
+            for j in range(num_batches):
+                inps_j = inps[j * self.batch_size:min((j + 1) * self.batch_size, datalen)].cuda()
+                hm_j = self.pose_model(inps_j)
+                hm.append(hm_j)
+            hm = torch.cat(hm).cpu().data
+            ske_img, skeleton, ske_black_img, boxes = self.__get_skeleton(boxes, scores, hm, pt1, pt2, orig_img)
+            return skeleton, ske_img, ske_black_img
+        except:
+            return [], orig_img, orig_img
